@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIDO Emulator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .theme-light {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --accent-primary: #4f46e5;
+            --accent-secondary: #6366f1;
+            --border-color: #e2e8f0;
+            --button-bg: #f1f5f9;
+            --button-hover: #e2e8f0;
+            --button-text: #1e293b;
+            --nav-bg: rgba(255, 255, 255, 0.9);
+        }
+
+        .theme-dark {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --accent-primary: #6366f1;
+            --accent-secondary: #818cf8;
+            --border-color: #334155;
+            --button-bg: #1e293b;
+            --button-hover: #2d3748;
+            --button-text: #f8fafc;
+            --nav-bg: rgba(15, 23, 42, 0.9);
+        }
+
+        :root {
+            --success: #22c55e;
+            --error: #ef4444;
+            --button-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            --button-hover-shadow: 0 8px 12px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 1rem;
+            padding: 1rem;
+            overflow: hidden;
+        }
+
+        .screen-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .status-bar {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1));
+            border-radius: 0.75rem;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .screen-wrapper {
+            flex: 1;
+            position: relative;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-color);
+            background: #000033;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .screen-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .navigation-section {
+            background: var(--nav-bg);
+            border-radius: 1rem;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            height: 100%;
+            box-shadow: var(--button-shadow);
+        }
+
+        .navigation-buttons {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            min-height: 0;
+            padding: 1rem;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(80px, 100px));
+            gap: 1rem;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .nav-button {
+            position: relative;
+            padding: 1rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            font-size: 1.125rem;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            box-shadow: var(--button-shadow);
+            width: 100%;
+            height: 60px;
+            text-transform: uppercase;
+        }
+
+        .nav-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-button:hover::before {
+            opacity: 1;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--button-hover-shadow);
+        }
+
+        .nav-button:active {
+            transform: translateY(1px);
+        }
+
+        .nav-button.action-key {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            border-color: #818cf8;
+        }
+
+        .nav-button.number-key {
+            background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+            border-color: #6366f1;
+        }
+
+        .nav-button.back-button {
+            background: linear-gradient(135deg, #64748b, #475569);
+            color: white;
+            font-size: 1rem;
+            height: 48px;
+            padding: 0.75rem;
+        }
+
+        #btn-restart {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            padding: 0.75rem;
+            color: white;
+            font-size: 1rem;
+            border-radius: 0.75rem;
+            height: 48px;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.375rem 0.75rem;
+            background: var(--button-bg);
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--button-shadow);
+            transition: all 0.3s ease;
+        }
+
+        .connection-status {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .status-dot.connected {
+            background-color: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.disconnected {
+            background-color: var(--error);
+            box-shadow: 0 0 10px var(--error);
+        }
+
+        .status-text {
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .status-text.connected {
+            color: var(--success);
+        }
+
+        .status-text.disconnected {
+            color: var(--error);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .screen-image img {
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.75rem;
+            border-radius: 9999px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+            box-shadow: var(--button-shadow);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: var(--button-hover-shadow);
+        }
+
+        .theme-toggle i {
+            font-size: 1.25rem;
+            transition: transform 0.5s ease;
+        }
+
+        .theme-toggle:hover i {
+            transform: rotate(180deg);
+        }
+
+        @keyframes buttonPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+            }
+        }
+
+        .nav-button.action-key:hover,
+        .nav-button.number-key:hover {
+            animation: buttonPulse 2s infinite;
+        }
+
+        .bottom-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-top: auto;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-button.back-button:hover,
+        #btn-restart:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--button-hover-shadow);
+        }
+
+        .nav-button.back-button:active,
+        #btn-restart:active {
+            transform: translateY(1px);
+        }
+    </style>
+</head>
+
+<body class="theme-dark min-h-screen">
+    <button id="theme-toggle" class="theme-toggle">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <div class="container">
+        <div class="screen-section">
+            <div class="status-bar">
+                <div class="flex items-center space-x-6">
+                    <div class="status-indicator">
+                        <div class="connection-status">
+                            <div id="status-dot" class="status-dot disconnected"></div>
+                            <span id="connection-text" class="status-text disconnected">Disconnected</span>
+                        </div>
+                    </div>
+                    <div class="status-indicator">
+                        <i class="fas fa-clock mr-2"></i>
+                        <span id="session-time" class="text-sm">00:00:00</span>
+                    </div>
+                    <div class="status-indicator">
+                        <i class="fas fa-signal mr-2"></i>
+                        <span id="latency" class="text-sm">0ms</span>
+                    </div>
+                    <div class="status-indicator">
+                        <i class="fas fa-database mr-2"></i>
+                        <span id="data-status" class="text-sm">Data ID: 1</span>
+                    </div>
+                </div>
+    </div>
+
+            <div class="screen-wrapper">
+                <img id="displayed-image" src="" alt="Emulator Screen" class="screen-image">
+            </div>
+        </div>
+
+        <div class="navigation-section">
+            <div id="navigation-buttons" class="navigation-buttons"></div>
+            <div class="bottom-buttons">
+                <button id="back-button" class="nav-button back-button" style="display: none;">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    <span>Back</span>
+                </button>
+                <button id="btn-restart" class="nav-button">
+                    <i class="fas fa-redo-alt mr-2"></i>
+                    <span>Restart Session</span>
+                </button>
+            </div>
+    </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        let sessionStartTime = new Date();
+        let currentScreen = 'off';  // Track current screen
+            let websocket = new WebSocket('ws://localhost:8765');
+        let commandHistory = [];
+        let commandIndex = -1;
+
+        function updateSessionTime() {
+            const now = new Date();
+            const diff = now - sessionStartTime;
+            const hours = Math.floor(diff / 3600000).toString().padStart(2, '0');
+            const minutes = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+            const seconds = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+            document.getElementById('session-time').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        setInterval(updateSessionTime, 1000);
+        setInterval(() => {
+            const latency = Math.floor(Math.random() * 50) + 10;
+            $('#latency').text(`${latency}ms`);
+        }, 2000);
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                $('#message-text').val('');
+            } else if (e.key === 'ArrowUp' && commandHistory.length > 0) {
+                e.preventDefault();
+                if (commandIndex < commandHistory.length - 1) {
+                    commandIndex++;
+                    $('#message-text').val(commandHistory[commandHistory.length - 1 - commandIndex]);
+                }
+            } else if (e.key === 'ArrowDown' && commandIndex >= 0) {
+                e.preventDefault();
+                commandIndex--;
+                if (commandIndex >= 0) {
+                    $('#message-text').val(commandHistory[commandHistory.length - 1 - commandIndex]);
+                } else {
+                    $('#message-text').val('');
+                }
+            }
+        });
+
+        websocket.onopen = function() {
+                console.log('Connected to WebSocket server');
+            const statusDot = document.getElementById('status-dot');
+            const connectionText = document.getElementById('connection-text');
+            
+            statusDot.classList.remove('disconnected');
+            statusDot.classList.add('connected');
+            connectionText.classList.remove('disconnected');
+            connectionText.classList.add('connected');
+            connectionText.textContent = 'Connected';
+        };
+
+        websocket.onclose = function() {
+            console.log('Disconnected from WebSocket server');
+            const statusDot = document.getElementById('status-dot');
+            const connectionText = document.getElementById('connection-text');
+            
+            statusDot.classList.remove('connected');
+            statusDot.classList.add('disconnected');
+            connectionText.classList.remove('connected');
+            connectionText.classList.add('disconnected');
+            connectionText.textContent = 'Disconnected';
+        };
+
+        websocket.onmessage = function(event) {
+            console.log('Message received:', event.data);
+
+                try {
+                    let data = JSON.parse(event.data);
+                    if (data.image_url) {
+                        $('#displayed-image').attr('src', data.image_url);
+                    
+                    // Extract screen name from image URL if possible
+                    let imageName = data.image_url.toLowerCase();
+                    if (imageName.includes('off.jpg')) {
+                        currentScreen = 'off';
+                    } else if (imageName.includes('login')) {
+                        currentScreen = 'login';
+                    } else if (imageName.includes('main-menu')) {
+                        currentScreen = 'main-menu';
+                    } else if (imageName.includes('first_workflow_queue')) {
+                        currentScreen = 'first_workflow_queue';
+                    } else if (imageName.includes('record_details')) {
+                        currentScreen = 'record_details';
+                    } else if (imageName.includes('claim_details')) {
+                        currentScreen = 'claim_details';
+                    } else if (imageName.includes('select_options')) {
+                        currentScreen = 'select_options';
+                    } else if (imageName.includes('workflow_queues')) {
+                        currentScreen = 'workflow_queues';
+                    }
+                    
+                    updateNavigationButtons();
+                    }
+                    if (data.analysis_result) {
+                    $('#analysis-area').html(data.analysis_result.replace(/\n/g, '<br>'));
+                    }
+                } catch (error) {
+                    console.error("Error parsing JSON:", error);
+                }
+            };
+
+        function createButtonGroup() {
+            return $('<div>').addClass('button-group');
+        }
+
+        function updateNavigationButtons() {
+            $('#navigation-buttons').empty();
+            const backButton = $('#back-button');
+            
+            switch(currentScreen) {
+                case 'off':
+                    backButton.hide();
+                    const startGroup = createButtonGroup();
+                    addButton('START', 'action-key', startGroup);
+                    $('#navigation-buttons').append(startGroup);
+                    break;
+                case 'login':
+                    backButton.hide();
+                    const loginButtons = createButtonGroup();
+                    addButton('1', 'number-key', loginButtons);
+                    addButton('9', 'number-key', loginButtons);
+                    $('#navigation-buttons').append(loginButtons);
+                    break;
+                case 'main-menu':
+                    backButton.show();
+                    const mainMenuButtons = createButtonGroup();
+                    for(let i = 1; i <= 5; i++) {
+                        addButton(i.toString(), 'number-key', mainMenuButtons);
+                    }
+                    $('#navigation-buttons').append(mainMenuButtons);
+                    break;
+                case 'first_workflow_queue':
+                    backButton.show();
+                    const workflowButtons = createButtonGroup();
+                    for(let i = 1; i <= 5; i++) {
+                        addButton(i.toString(), 'number-key', workflowButtons);
+                    }
+                    $('#navigation-buttons').append(workflowButtons);
+                    break;
+                case 'record_details':
+                    backButton.show();
+                    const letterButtons = createButtonGroup();
+                    for(let i = 65; i <= 79; i++) {
+                        addButton(String.fromCharCode(i), 'action-key', letterButtons);
+                    }
+                    $('#navigation-buttons').append(letterButtons);
+                    break;
+                case 'claim_details':
+                    backButton.show();
+                    const claimButtons = createButtonGroup();
+                    ['M', 'P', 'R', 'F', 'V', 'O'].forEach(letter => {
+                        addButton(letter, 'action-key', claimButtons);
+                    });
+                    $('#navigation-buttons').append(claimButtons);
+                    break;
+                case 'select_options':
+                    backButton.show();
+                    const optionsButtons = createButtonGroup();
+                    ['S','G','E','B','P','R','I','L','H','N','A','V','U','Y'].forEach(option => {
+                        addButton(option, 'action-key', optionsButtons);
+                    });
+                    $('#navigation-buttons').append(optionsButtons);
+                    break;
+                case 'workflow_queues':
+                    backButton.show();
+                    const wfButtons = createButtonGroup();
+                    addButton('A', 'action-key', wfButtons);
+                    $('#navigation-buttons').append(wfButtons);
+                    break;
+            }
+        }
+
+        function addButton(text, className, container) {
+            const button = $('<button>')
+                .addClass('nav-button')
+                .addClass(className)
+                .html(`<span>${text}</span>`)
+                .click(function() {
+                    handleNavigation(text.toLowerCase());
+                });
+
+            if (container) {
+                container.append(button);
+            } else {
+                $('#navigation-buttons').append(button);
+            }
+        }
+
+        function handleNavigation(command) {
+            let previousScreen = currentScreen;
+            
+            switch(currentScreen) {
+                case 'off':
+                    if(command === 'start') {
+                        currentScreen = 'login';
+                        websocket.send('start');
+                    }
+                    break;
+                case 'login':
+                    if(command === '1') {
+                        currentScreen = 'main-menu';
+                        websocket.send('1');
+                    } else if(command === '9') {
+                        currentScreen = 'off';
+                        websocket.send('9');
+                    }
+                    break;
+                case 'main-menu':
+                    if(command === '1') {
+                        currentScreen = 'first_workflow_queue';
+                        websocket.send('1');
+                    } else if(command === 'back') {
+                        currentScreen = 'login';
+                        websocket.send('back');
+                    }
+                    break;
+                case 'first_workflow_queue':
+                    if(command === '1') {
+                        currentScreen = 'record_details';
+                        websocket.send('1');
+                    } else if(command === 'back') {
+                        currentScreen = 'main-menu';
+                        websocket.send('back');
+                    }
+                    break;
+                case 'record_details':
+                    if(command === 'd') {
+                        currentScreen = 'claim_details';
+                        websocket.send('d');
+                    } else if(command === 'back') {
+                        currentScreen = 'first_workflow_queue';
+                        websocket.send('back');
+                    } else {
+                        websocket.send(command);
+                    }
+                    break;
+                case 'claim_details':
+                    if(command === 'v') {
+                        currentScreen = 'select_options';
+                        websocket.send('v');
+                    } else if(command === 'back') {
+                        currentScreen = 'record_details';
+                        websocket.send('back');
+                    } else {
+                        websocket.send(command);
+                    }
+                    break;
+                case 'select_options':
+                    if(command === 'i') {
+                        currentScreen = 'workflow_queues';
+                        websocket.send('i');
+                    } else if(command === 'back') {
+                        currentScreen = 'claim_details';
+                        websocket.send('back');
+                    } else {
+                        websocket.send(command);
+                    }
+                    break;
+                case 'workflow_queues':
+                    if(command === 'a') {
+                        websocket.send('a');
+                    } else if(command === 'back') {
+                        currentScreen = 'select_options';
+                        websocket.send('back');
+                    }
+                    break;
+            }
+
+            // Update UI only if screen changed
+            if (previousScreen !== currentScreen) {
+                updateNavigationButtons();
+                console.log('Screen changed from', previousScreen, 'to', currentScreen);
+            }
+        }
+
+        $('#btn-restart').click(function() {
+            currentScreen = 'off';
+            updateNavigationButtons();
+            websocket.send("start");
+        });
+
+        // Add back button click handler
+        $('#back-button').click(function() {
+            handleNavigation('back');
+        });
+
+        websocket.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+
+        // Theme Toggle Enhancement
+        const themeToggle = document.getElementById('theme-toggle');
+        const icon = themeToggle.querySelector('i');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+        function setTheme(isDark) {
+            const body = document.body;
+            if (isDark) {
+                body.classList.remove('theme-light');
+                body.classList.add('theme-dark');
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.remove('theme-dark');
+                body.classList.add('theme-light');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Check system preference
+        prefersDark.addEventListener('change', (e) => {
+            setTheme(e.matches);
+        });
+
+        // Toggle theme on click
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.body.classList.contains('theme-dark');
+            setTheme(!isDark);
+        });
+
+        // Check for saved theme preference or use system preference
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                setTheme(savedTheme === 'dark');
+            } else {
+                setTheme(prefersDark.matches);
+            }
+        });
+
+        // Initialize buttons for initial screen
+        $(document).ready(function() {
+            currentScreen = 'off';
+            updateNavigationButtons();
+        });
+    </script>
+</body>
+
+</html>
