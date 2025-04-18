@@ -1,0 +1,9 @@
+flask==3.0.2
+waitress
+websockets
+requests==2.31.0
+pyinstaller
+openai
+python-dotenv
+pyautogui
+langchain 

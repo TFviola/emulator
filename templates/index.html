@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIDO Emulator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .theme-light {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --accent-primary: #4f46e5;
+            --accent-secondary: #6366f1;
+            --border-color: #e2e8f0;
+            --button-bg: #f1f5f9;
+            --button-hover: #e2e8f0;
+            --button-text: #f8fafc;
+            --nav-bg: rgba(255, 255, 255, 0.9);
+        }
+
+        .theme-dark {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --accent-primary: #6366f1;
+            --accent-secondary: #818cf8;
+            --border-color: #334155;
+            --button-bg: #1e293b;
+            --button-hover: #2d3748;
+            --button-text: #f8fafc;
+            --nav-bg: rgba(15, 23, 42, 0.9);
+        }
+
+        :root {
+            --success: #22c55e;
+            --error: #ef4444;
+            --button-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            --button-hover-shadow: 0 8px 12px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 1rem;
+            padding: 1rem;
+            overflow: hidden;
+        }
+
+        .screen-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .status-bar {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1));
+            border-radius: 0.75rem;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .screen-wrapper {
+            flex: 1;
+            position: relative;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-color);
+            background: #000033;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .screen-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .navigation-section {
+            background: var(--nav-bg);
+            border-radius: 1rem;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            height: 100%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .navigation-buttons {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1rem;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(60px, 80px));
+            gap: 1rem;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .nav-button {
+            position: relative;
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 1.125rem;
+            transition: all 0.2s ease;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: var(--button-text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            min-height: 48px;
+            width: 100%;
+            text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-button.number-key {
+            background: linear-gradient(135deg, #3730a3 0%, #312e81 100%);
+            border-color: #4f46e5;
+            aspect-ratio: 1;
+        }
+
+        .nav-button.action-key {
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+            border-color: #6366f1;
+            font-size: 1.25rem;
+            width: 120px;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            filter: brightness(1.1);
+        }
+
+        .nav-button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.375rem 0.75rem;
+            background: var(--button-bg);
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--button-shadow);
+            transition: all 0.3s ease;
+        }
+
+        .connection-status {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .status-dot.connected {
+            background-color: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.disconnected {
+            background-color: var(--error);
+            box-shadow: 0 0 10px var(--error);
+        }
+
+        .status-text {
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .status-text.connected {
+            color: var(--success);
+        }
+
+        .status-text.disconnected {
+            color: var(--error);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .screen-image img {
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.75rem;
+            border-radius: 9999px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+            box-shadow: var(--button-shadow);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: var(--button-hover-shadow);
+        }
+
+        .theme-toggle i {
+            font-size: 1.25rem;
+            transition: transform 0.5s ease;
+        }
+
+        .theme-toggle:hover i {
+            transform: rotate(180deg);
+        }
+
+        @keyframes buttonPulse {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+
+        .nav-button.action-key:hover,
+        .nav-button.number-key:hover {
+            animation: buttonPulse 2s infinite;
+        }
+
+        .bottom-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: auto;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #btn-restart {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+            font-size: 1rem;
+            border-radius: 0.75rem;
+            height: 48px;
+            padding: 0.75rem;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #btn-restart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            background: linear-gradient(135deg, #4f46e5, #4338ca);
+        }
+
+        #btn-restart:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-button.back-button {
+            background: linear-gradient(135deg, #475569 0%, #334155 100%);
+            border-color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+
+<body class="theme-dark min-h-screen">
+    <button id="theme-toggle" class="theme-toggle">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <div class="container">
+        <div class="screen-section">
+            <div class="status-bar">
+                <div class="flex items-center space-x-6">
+                    <div class="status-indicator">
+                        <div class="connection-status">
+                            <div id="status-dot" class="status-dot disconnected"></div>
+                            <span id="connection-text" class="status-text disconnected">Disconnected</span>
+                        </div>
+                    </div>
+                    <div class="status-indicator">
+                        <i class="fas fa-clock mr-2"></i>
+                        <span id="session-time" class="text-sm">00:00:00</span>
+                    </div>
+                    <div class="status-indicator">
+                        <i class="fas fa-signal mr-2"></i>
+                        <span id="latency" class="text-sm">0ms</span>
+                    </div>
+                    <div class="status-indicator">
+                        <i class="fas fa-database mr-2"></i>
+                        <span id="data-status" class="text-sm">Data ID: 1</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="screen-wrapper">
+                <img id="displayed-image" src="" alt="Emulator Screen" class="screen-image">
+            </div>
+        </div>
+
+        <div class="navigation-section">
+            <div id="navigation-buttons" class="navigation-buttons"></div>
+            <div class="bottom-buttons">
+                <button id="back-button" class="nav-button back-button" style="display: none;">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    <span>Back</span>
+                </button>
+                <button id="btn-restart" class="nav-button">
+                    <i class="fas fa-redo-alt mr-2"></i>
+                    <span>Restart Session</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        let sessionStartTime = new Date();
+        let currentScreen = 'eligibility_main_menu';
+        let websocket = null;
+        let isConnecting = false;
+        let lastCommandTime = 0;
+        let reconnectAttempts = 0;
+        
+        const COMMAND_THROTTLE = 500;
+        const MAX_RECONNECT_ATTEMPTS = 5;
+        const VALID_COMMANDS = new Set(['1', '2', '3', '4', '5', '6', '7', '8', '9', 'F3', 'back']);
+
+        // Screen navigation mapping with capital F3
+        const SCREEN_FLOW = {
+            'eligibility_main_menu': {
+                '2': 'patient_search_selection'
+            },
+            'patient_search_selection': {
+                'F3': 'patient_details',
+                'back': 'eligibility_main_menu'
+            },
+            'patient_details': {
+                'F3': 'search_patient_details',
+                'back': 'patient_search_selection'
+            },
+            'search_patient_details': {
+                'F3': 'review_details',
+                'back': 'patient_details'
+            },
+            'review_details': {
+                'back': 'search_patient_details'
+            }
+        };
+
+        function initializeWebSocket() {
+            if (websocket !== null || isConnecting) return;
+            
+            try {
+                isConnecting = true;
+                websocket = new WebSocket('ws://localhost:8765');
+
+                websocket.onopen = function() {
+                    console.log('Connected to WebSocket server');
+                    isConnecting = false;
+                    reconnectAttempts = 0;
+                    updateConnectionStatus(true);
+                    loadScreen('eligibility_main_menu');
+                };
+
+                websocket.onclose = function(event) {
+                    console.log('WebSocket closed:', event.code, event.reason);
+                    isConnecting = false;
+                    websocket = null;
+                    updateConnectionStatus(false);
+                    
+                    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                        reconnectAttempts++;
+                        setTimeout(initializeWebSocket, 2000 * reconnectAttempts);
+                    }
+                };
+
+                websocket.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    if (websocket) {
+                        websocket.close();
+                    }
+                };
+
+                websocket.onmessage = function(event) {
+                    console.log('Message received:', event.data);
+                    try {
+                        let data = JSON.parse(event.data);
+                        if (data.screen) {
+                            loadScreen(data.screen);
+                        } else if (data.image_url) {
+                            updateScreen(data.image_url);
+                        }
+                    } catch (error) {
+                        console.error("Error parsing JSON:", error);
+                    }
+                };
+            } catch (error) {
+                console.error('Error initializing WebSocket:', error);
+                isConnecting = false;
+                if (websocket) {
+                    websocket.close();
+                }
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusDot = document.getElementById('status-dot');
+            const connectionText = document.getElementById('connection-text');
+            
+            if (connected) {
+                statusDot.classList.remove('disconnected');
+                statusDot.classList.add('connected');
+                connectionText.classList.remove('disconnected');
+                connectionText.classList.add('connected');
+                connectionText.textContent = 'Connected';
+            } else {
+                statusDot.classList.remove('connected');
+                statusDot.classList.add('disconnected');
+                connectionText.classList.remove('connected');
+                connectionText.classList.add('disconnected');
+                connectionText.textContent = 'Disconnected';
+            }
+        }
+
+        function loadScreen(screenName) {
+            if (!screenName) return;
+            
+            try {
+                currentScreen = screenName;
+                const imagePath = `/static/screenshots/${screenName}.jpg`;
+                $('#displayed-image').attr('src', imagePath);
+                updateNavigationButtons();
+            } catch (error) {
+                console.error('Error loading screen:', error);
+            }
+        }
+
+        function updateScreen(imagePath) {
+            try {
+                $('#displayed-image').attr('src', imagePath);
+            } catch (error) {
+                console.error('Error updating screen:', error);
+            }
+        }
+
+        function sendCommand(command) {
+            if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+                console.log('WebSocket not connected');
+                initializeWebSocket();
+                return;
+            }
+
+            const now = Date.now();
+            if (now - lastCommandTime < COMMAND_THROTTLE) {
+                console.log('Command throttled:', command);
+                return;
+            }
+
+            try {
+                // Validate command is in allowed set
+                if (!VALID_COMMANDS.has(command)) {
+                    console.log('Invalid command:', command);
+                    return;
+                }
+
+                // Validate command for current screen
+                if (SCREEN_FLOW[currentScreen] && SCREEN_FLOW[currentScreen][command]) {
+                    console.log('Sending command:', command);
+                    websocket.send(command);
+                    lastCommandTime = now;
+                    
+                    const nextScreen = SCREEN_FLOW[currentScreen][command];
+                    if (nextScreen) {
+                        setTimeout(() => loadScreen(nextScreen), 100);
+                    }
+                } else {
+                    console.log('Invalid command for current screen:', command);
+                }
+            } catch (error) {
+                console.error('Error sending command:', error);
+                if (websocket) {
+                    websocket.close();
+                }
+            }
+        }
+
+        function handleNavigation(command) {
+            if (typeof command === 'string') {
+                // Ensure F3 is always capital and validate command
+                if (command.toLowerCase() === 'f3') {
+                    command = 'F3';
+                }
+                if (VALID_COMMANDS.has(command)) {
+                    sendCommand(command);
+                } else {
+                    console.log('Invalid command rejected:', command);
+                }
+            }
+        }
+
+        function updateNavigationButtons() {
+            $('#navigation-buttons').empty();
+            const backButton = $('#back-button');
+            
+            switch(currentScreen) {
+                case 'eligibility_main_menu':
+                    backButton.hide();
+                    const mainMenuGroup = createButtonGroup();
+                    for(let i = 1; i <= 9; i++) {
+                        const button = $('<button>')
+                            .addClass('nav-button')
+                            .addClass('number-key')
+                            .html(`<span>${i}</span>`)
+                            .click(function() {
+                                handleNavigation(i.toString());
+                            });
+                        mainMenuGroup.append(button);
+                    }
+                    $('#navigation-buttons').append(mainMenuGroup);
+                    break;
+
+                case 'patient_search_selection':
+                case 'patient_details':
+                case 'search_patient_details':
+                    backButton.show();
+                    const actionGroup = createButtonGroup();
+                    const f3Button = $('<button>')
+                        .addClass('nav-button')
+                        .addClass('action-key')
+                        .html('<span>F3</span>')
+                        .click(function() {
+                            handleNavigation('F3');  // Always use capital F3
+                        });
+                    actionGroup.append(f3Button);
+                    $('#navigation-buttons').append(actionGroup);
+                    break;
+
+                case 'review_details':
+                    backButton.show();
+                    break;
+            }
+        }
+
+        $('#btn-restart').click(function() {
+            loadScreen('eligibility_main_menu');
+        });
+
+        $('#back-button').click(function() {
+            handleNavigation('back');
+        });
+
+        // Initialize WebSocket connection
+        initializeWebSocket();
+
+        function updateSessionTime() {
+            const now = new Date();
+            const diff = now - sessionStartTime;
+            const hours = Math.floor(diff / 3600000).toString().padStart(2, '0');
+            const minutes = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+            const seconds = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+            document.getElementById('session-time').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        setInterval(updateSessionTime, 1000);
+        setInterval(() => {
+            const latency = Math.floor(Math.random() * 50) + 10;
+            $('#latency').text(`${latency}ms`);
+        }, 2000);
+
+        // Theme Toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        const icon = themeToggle.querySelector('i');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+        function setTheme(isDark) {
+            const body = document.body;
+            if (isDark) {
+                body.classList.remove('theme-light');
+                body.classList.add('theme-dark');
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.remove('theme-dark');
+                body.classList.add('theme-light');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        prefersDark.addEventListener('change', (e) => {
+            setTheme(e.matches);
+        });
+
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.body.classList.contains('theme-dark');
+            setTheme(!isDark);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                setTheme(savedTheme === 'dark');
+            } else {
+                setTheme(prefersDark.matches);
+            }
+            currentScreen = 'eligibility_main_menu';
+            updateNavigationButtons();
+        });
+
+        function createButtonGroup() {
+            return $('<div>').addClass('button-group');
+        }
+    </script>
+</body>
+
+</html>
