@@ -160,6 +160,10 @@
             width: 120px;
         }
 
+        .nav-button.action-key.small-text {
+            font-size: 0.9rem;
+        }
+
         .nav-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
@@ -377,15 +381,15 @@
         
         const COMMAND_THROTTLE = 500;
         const MAX_RECONNECT_ATTEMPTS = 5;
-        const VALID_COMMANDS = new Set(['1', '2', '3', '4', '5', '6', '7', '8', '9', 'F3', 'back']);
+        const VALID_COMMANDS = new Set(['1', '2', '3', '4', '5', '6', '7', '8', '9', 'F3', 'Credentials', 'back']);
 
-        // Screen navigation mapping with capital F3
+        // Screen navigation mapping
         const SCREEN_FLOW = {
             'eligibility_main_menu': {
                 '2': 'patient_search_selection'
             },
             'patient_search_selection': {
-                'F3': 'patient_details',
+                'Credentials': 'patient_details',
                 'back': 'eligibility_main_menu'
             },
             'patient_details': {
@@ -540,10 +544,15 @@
 
         function handleNavigation(command) {
             if (typeof command === 'string') {
-                // Ensure F3 is always capital and validate command
+                // Normalize command
                 if (command.toLowerCase() === 'f3') {
                     command = 'F3';
+                } else if (command.toLowerCase() === 'credentials') {
+                    command = 'Credentials';
+                } else if (command.toLowerCase() === 'back') {
+                    command = 'back';
                 }
+                
                 if (VALID_COMMANDS.has(command)) {
                     sendCommand(command);
                 } else {
@@ -574,19 +583,33 @@
                     break;
 
                 case 'patient_search_selection':
-                case 'patient_details':
-                case 'search_patient_details':
                     backButton.show();
                     const actionGroup = createButtonGroup();
                     const f3Button = $('<button>')
                         .addClass('nav-button')
                         .addClass('action-key')
-                        .html('<span>F3</span>')
+                        .addClass('small-text')
+                        .html('<span>Credentials</span>')
                         .click(function() {
-                            handleNavigation('F3');  // Always use capital F3
+                            handleNavigation('Credentials');
                         });
                     actionGroup.append(f3Button);
                     $('#navigation-buttons').append(actionGroup);
+                    break;
+
+                case 'patient_details':
+                case 'search_patient_details':
+                    backButton.show();
+                    const actionGroup2 = createButtonGroup();
+                    const f3Button2 = $('<button>')
+                        .addClass('nav-button')
+                        .addClass('action-key')
+                        .html('<span>F3</span>')
+                        .click(function() {
+                            handleNavigation('F3');
+                        });
+                    actionGroup2.append(f3Button2);
+                    $('#navigation-buttons').append(actionGroup2);
                     break;
 
                 case 'review_details':

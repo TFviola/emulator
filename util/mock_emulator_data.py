@@ -88,12 +88,12 @@ patient_search_selection = """
     "value": "B"
   },
   "input_field": {
-    "label": "Press F3 to begin searching for patient",
+    "label": "Press Credentials to begin searching for patient",
     "value": "",
     "focus": true
   },
   "navigation_options": {
-    "F3": "Begin Search",
+    "F3": "Credentials",
     "back": "Return to Previous Screen"
   }
 }

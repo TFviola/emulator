@@ -69,14 +69,20 @@ def get_screen(screen_code):
     try:
         # Convert screen_code to ScreenNames enum
         screen_enum = ScreenNames[screen_code]
-        screen_data = SCREENS.screens.get(screen_enum)
-        if screen_data:
-            return jsonify({
-                "image_url": screen_data["image_url"],
-                "navigation_options": list(screen_data["navigations"].keys()),
-                "screen_data": screen_data["extra_data"]
-            })
-        return jsonify({"error": "Screen not found"}), 404
+        return jsonify(SCREENS.get_screen_data(screen_enum))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/current-screen')
+def get_current_screen():
+    try:
+        current_screen_data = SCREENS.get_screen_data(SCREENS.current_screen)
+        return jsonify({
+            "screen": SCREENS.current_screen.value,
+            "image_url": current_screen_data["image_url"],
+            "screen_data": json.loads(SCREENS.screens[SCREENS.current_screen]["mock_data"]),
+            "navigation_options": list(SCREENS.screens[SCREENS.current_screen]["navigations"].keys())
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
